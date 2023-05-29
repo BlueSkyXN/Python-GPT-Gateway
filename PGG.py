@@ -3,14 +3,43 @@ from flask_cors import CORS
 import os
 import json
 import requests
+from threading import Lock
+import queue
+import uuid
+import random
 
+class AccessToken:
+    def __init__(self, tokens):
+        self.tokens = queue.Queue()
+        for token in tokens:
+            self.tokens.put(token)
+
+        # Save the tokens to a file
+        if not os.path.exists('access_tokens.json'):
+            with open('access_tokens.json', 'w') as f:
+                json.dump(tokens, f)
+        else:
+            with open('access_tokens.json', 'w') as f:
+                json.dump(tokens, f)
+
+    def get_token(self):
+        if self.tokens.empty():
+            return ""
+
+        token = self.tokens.get()
+        self.tokens.put(token)
+        return token
+
+# Create a new Flask app
 app = Flask(__name__)
 CORS(app)
 
-# 定义相关的全局变量
+# Initialize your access tokens
+ACCESS_TOKENS = AccessToken(["token1", "token2", "token3"])
+
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "TotelySecurePassword")
-ACCESS_TOKENS = []
 PUID = ""
+
 
 API_KEYS = {}
 with open("api_keys.txt", "r") as file:
@@ -19,6 +48,46 @@ with open("api_keys.txt", "r") as file:
         if key != "":
             API_KEYS["Bearer " + key] = True
 
+
+# Function to convert API request
+def convert_api_request(api_request):
+    chatgpt_request = {
+        'action': 'next',
+        'parent_message_id': str(uuid.uuid4()),
+        'model': 'text-davinci-002-render-sha',
+        'history_and_training_disabled': True,
+        'messages': []
+    }
+
+    model = api_request.get('model', '')
+    if model.startswith('gpt-4'):
+        chatgpt_request['model'] = model
+
+    for api_message in api_request.get('messages', []):
+        if api_message.get('role', '') == 'system':
+            api_message['role'] = 'critic'
+        chatgpt_request['messages'].append({
+            'id': str(uuid.uuid4()),
+            'author': {'role': api_message['role']},
+            'content': {'content_type': 'text', 'parts': [api_message['content']]}
+        })
+
+    return chatgpt_request
+
+# Function to send request to OpenAI API
+def send_request(chatgpt_request, access_token):
+    url = os.getenv('API_REVERSE_PROXY', 'https://ai.fakeopen.com/api/conversation')
+    headers = {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36',
+        'Accept': '*/*'
+    }
+    if access_token:
+        headers['Authorization'] = 'Bearer ' + access_token
+
+    response = requests.post(url, headers=headers, json=chatgpt_request)
+
+    return response
 
 @app.before_request
 def admin_check():
@@ -63,7 +132,7 @@ def tokens_handler():
     if data is None or len(data) == 0:
         return 'tokens not provided', 400
     global ACCESS_TOKENS
-    ACCESS_TOKENS = data
+    ACCESS_TOKENS = AccessToken(data)
     return 'tokens updated', 200
 
 
@@ -75,25 +144,21 @@ def options_handler():
 @app.route('/v1/chat/completions', methods=['POST'])
 def nightmare_handler():
     data = request.get_json()
-    # Convert the chat request to a ChatGPT request
-    # Here we assume you have defined a method `convert_api_request()`
     translated_request = convert_api_request(data)
 
     auth_header = request.headers.get('Authorization')
-    token = ACCESS_TOKENS[0] if ACCESS_TOKENS else None
+    token = ACCESS_TOKENS.get_token() if ACCESS_TOKENS else None
     if auth_header:
         custom_access_token = auth_header.replace("Bearer ", "")
         if custom_access_token.startswith("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ik1UaEVOVUpHTkVNMVFURTRNMEZCTWpkQ05UZzVNRFUxUlRVd1FVSkRNRU13UmtGRVFrRXpSZyJ9"):
             token = custom_access_token
 
-    # Assuming `send_request()` is a function that sends a request to a chatGPT API
     response = send_request(translated_request, token)
 
     if response.status_code != 200:
         return response.text, response.status_code
 
     return response.text, 200
-
 
 if __name__ == '__main__':
     app.run(debug=True)
