@@ -1,0 +1,10 @@
+{
+    "model":"gpt-4-mobile",
+    "messages":[
+      {
+        "role":"user",
+        "content":"请说这是一个测试！然后告诉我你是什么模型"
+      }
+    ]
+  }
+  

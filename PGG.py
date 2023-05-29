@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 import os
 import json
@@ -56,7 +56,8 @@ def convert_api_request(api_request):
         'parent_message_id': str(uuid.uuid4()),
         'model': 'text-davinci-002-render-sha',
         'history_and_training_disabled': True,
-        'messages': []
+        'messages': [],
+        'stream': False
     }
 
     model = api_request.get('model', '')
@@ -94,7 +95,7 @@ def send_request(chatgpt_request, access_token):
         response = requests.post(url, headers=headers, json=chatgpt_request)
         response.raise_for_status()  # 检查响应状态码，如果不是 2xx，则会抛出异常
     except requests.exceptions.RequestException as e:
-        return 'Error: ' + str(e), 500
+        return Response('Error: ' + str(e), 500)
 
     return response
 
@@ -182,7 +183,56 @@ def nightmare_handler():
     if response.status_code != 200:
         return response.text, response.status_code
 
-    return response.text, 200
+    # 处理返回的数据
+    final_message = None
+    for line in response.text.split("\n"):
+        if line.startswith("data:"):
+            message = json.loads(line[5:])  # 移除 "data:" 并解析 JSON
+            if message["message"]["status"] == "finished_successfully" and message["message"]["author"]["role"] == "assistant":
+                final_message = message
+                break
+
+    # 使用新的格式化函数
+    formatted_response = format_response(final_message)
+    # 返回处理后的数据
+    return json.dumps(formatted_response), 200
+
+    # 原始返回代码
+    # return json.dumps(final_message), 200
+
+
+def format_response(data):
+    # Extract necessary information from the response
+    message_id = data["message"]["id"]
+    content = data["message"]["content"]["parts"][0]
+    model = data["message"]["metadata"]["model_slug"]
+    model = model if model.startswith("gpt-4") else "gpt-3.5-turbo"
+
+    # Format it to desired structure
+    formatted_response = {
+        "id": message_id,
+        "object": "chat.completion",
+        "created": 0,
+        "model": model,
+        "usage": {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0
+        },
+        "choices": [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": content
+                },
+                "finish_reason": None
+            }
+        ]
+    }
+    
+    return formatted_response
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8080)
