@@ -50,7 +50,6 @@ with open("api_keys.txt", "r") as file:
             API_KEYS["Bearer " + key] = True
 
 
-# Function to convert API request
 def convert_api_request(api_request):
     chatgpt_request = {
         'action': 'next',
@@ -64,29 +63,38 @@ def convert_api_request(api_request):
     if model.startswith('gpt-4'):
         chatgpt_request['model'] = model
 
-    for api_message in api_request.get('messages', []):
-        if api_message.get('role', '') == 'system':
-            api_message['role'] = 'critic'
+    messages = api_request.get('messages', [])
+    for api_message in messages:
+        role = api_message.get('role', '')
+        if role == 'system':
+            role = 'critic'
+        content = api_message.get('content', '')
         chatgpt_request['messages'].append({
             'id': str(uuid.uuid4()),
-            'author': {'role': api_message['role']},
-            'content': {'content_type': 'text', 'parts': [api_message['content']]}
+            'author': {'role': role},
+            'content': {'content_type': 'text', 'parts': [content]}
         })
 
     return chatgpt_request
 
-# Function to send request to OpenAI API
+
+
 def send_request(chatgpt_request, access_token):
     url = os.getenv('API_REVERSE_PROXY', 'https://ai.fakeopen.com/api/conversation')
     headers = {
         'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
         'Accept': '*/*'
     }
+
     if access_token:
         headers['Authorization'] = 'Bearer ' + access_token
 
-    response = requests.post(url, headers=headers, json=chatgpt_request)
+    try:
+        response = requests.post(url, headers=headers, json=chatgpt_request)
+        response.raise_for_status()  # 检查响应状态码，如果不是 2xx，则会抛出异常
+    except requests.exceptions.RequestException as e:
+        return 'Error: ' + str(e), 500
 
     return response
 
@@ -94,16 +102,22 @@ def send_request(chatgpt_request, access_token):
 def admin_check():
     if request.path.startswith('/admin'):
         password = request.headers.get('Authorization')
-        if password != ADMIN_PASSWORD:
-            return {'Unauthorized': password}, 401
-
-
+        if password is None:
+            return 'Unauthorized: Missing Authorization header', 401
+        elif password != ADMIN_PASSWORD:
+            return 'Unauthorized: Invalid password', 401
 
 @app.before_request
 def authorization():
     if len(API_KEYS) != 0:
-        if not API_KEYS.get(request.headers.get("Authorization")):
-            return 'Unauthorized', 401
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return 'Unauthorized: Missing Authorization header', 401
+        
+        api_key = API_KEYS.get(auth_header)
+        if not api_key:
+            return 'Unauthorized: Invalid API key', 401
+
 
 
 @app.route('/admin/password', methods=['PATCH'])
@@ -137,11 +151,6 @@ def tokens_handler():
     ACCESS_TOKENS = AccessToken(data)
     return 'tokens updated', 200
 
-
-@app.route('/v1/chat/completions', methods=['OPTIONS'])
-def options_handler():
-    return jsonify({"message": "pong"}), 200
-
 @app.route('/ping', methods=['GET'])
 def ping_handler():
     return 'pong', 200
@@ -149,6 +158,11 @@ def ping_handler():
 @app.route('/', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def home_handler():
     return 'Welcome to PGG<br/>Your current operation is ' + request.method, 200
+
+
+@app.route('/v1/chat/completions', methods=['OPTIONS'])
+def options_handler():
+    return jsonify({"message": "pong"}), 200
 
 
 @app.route('/v1/chat/completions', methods=['POST'])
