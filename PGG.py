@@ -37,7 +37,8 @@ CORS(app)
 # Initialize your access tokens
 ACCESS_TOKENS = AccessToken(["token1", "token2", "token3"])
 
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "TotelySecurePassword")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "TotallySecurePassword")
+
 PUID = ""
 
 
@@ -94,7 +95,8 @@ def admin_check():
     if request.path.startswith('/admin'):
         password = request.headers.get('Authorization')
         if password != ADMIN_PASSWORD:
-            return 'Unauthorized', 401
+            return {'Unauthorized': password}, 401
+
 
 
 @app.before_request
@@ -140,6 +142,14 @@ def tokens_handler():
 def options_handler():
     return jsonify({"message": "pong"}), 200
 
+@app.route('/ping', methods=['GET'])
+def ping_handler():
+    return 'pong', 200
+
+@app.route('/', methods=['GET', 'POST', 'PUT', 'DELETE'])
+def home_handler():
+    return 'Welcome to PGG<br/>Your current operation is ' + request.method, 200
+
 
 @app.route('/v1/chat/completions', methods=['POST'])
 def nightmare_handler():
@@ -161,4 +171,4 @@ def nightmare_handler():
     return response.text, 200
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=8080)
