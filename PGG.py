@@ -60,12 +60,8 @@ class AccessToken:
             self.tokens.put(token)
 
         # 保存令牌到文件
-        if not os.path.exists('access_tokens.json'):
-            with open('access_tokens.json', 'w') as f:
-                json.dump(tokens, f)
-        else:
-            with open('access_tokens.json', 'w') as f:
-                json.dump(tokens, f)
+        with open('access_tokens.json', 'w') as f:
+            json.dump(tokens, f)
 
     # 获取令牌方法
     def get_token(self):
@@ -85,9 +81,6 @@ CORS(app)
 ACCESS_TOKENS = AccessToken(["token1", "token2", "token3"])
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "TotallySecurePassword")
-
-PUID = ""
-
 
 API_KEYS = {}
 with open("api_keys.txt", "r") as file:
@@ -143,7 +136,7 @@ def send_request(chatgpt_request, access_token):
     LOGGERS['send_request'].info('已发送带有头部的请求: %s', headers) 
 
     try:
-        response = requests.post(url, headers=headers, json=chatgpt_request)
+        response = requests.post(url, headers=headers, json=chatgpt_request, timeout=300, verify=False)
         response.raise_for_status()  # 检查响应状态码，如果不是 2xx，则会抛出异常
     except requests.exceptions.RequestException as e:
         LOGGERS['send_request'].error('发生错误: %s', str(e)) 
@@ -178,16 +171,23 @@ def authorization():
         if not api_key:
             return 'Unauthorized: Invalid API key', 401
 
-
-
 # 管理员密码处理器
 @app.route('/admin/password', methods=['PATCH'])
 def password_handler():
     data = request.get_json()
     if 'password' not in data:
         return '密码未提供', 400
+
+    password = data['password']
+    # 检查密码长度
+    if len(password) < 8:
+        return '密码太短，至少需要8个字符', 400
+    # 检查密码复杂性，这只是一个简单的例子，你可以根据需要增加更复杂的检查
+    if not any(char.isdigit() for char in password):
+        return '密码必须至少包含一个数字', 400
+
     global ADMIN_PASSWORD
-    ADMIN_PASSWORD = data['password']
+    ADMIN_PASSWORD = password
     os.environ["ADMIN_PASSWORD"] = ADMIN_PASSWORD
     return '密码已更新', 200
 
