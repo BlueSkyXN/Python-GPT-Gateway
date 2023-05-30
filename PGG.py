@@ -195,11 +195,17 @@ def password_handler():
 @app.route('/admin/tokens', methods=['PATCH'])
 def tokens_handler():
     data = request.get_json()
-    if data is None or len(data) == 0:
-        return 'tokens not provided', 400
+    if 'tokens' not in data:
+        return 'Tokens 未提供', 400
+
+    tokens = data['tokens']
+    # 检查 tokens 是否为非空列表，并且每个元素都是字符串
+    if not isinstance(tokens, list) or not tokens or not all(isinstance(token, str) for token in tokens):
+        return '无效的 Tokens', 400
+
     global ACCESS_TOKENS
-    ACCESS_TOKENS = AccessToken(data)
-    return 'tokens updated', 200
+    ACCESS_TOKENS = AccessToken(tokens)
+    return 'Tokens 已更新', 200
 
 
 
@@ -250,20 +256,41 @@ def nightmare_handler():
 
     # 使用新的格式化函数
     formatted_response = format_response(final_message)
-
     # 返回处理后的数据
     LOGGERS['final_response'].info('最终响应: %s', formatted_response)
     return json.dumps(formatted_response), 200
-
     #原始返回代码
     # return json.dumps(final_message), 200
 
 
+# 黑名单版本
+def format_response_black(data):
+    # 提取数据...
+    content = data["choices"][0]["message"]["content"]
+    finish_reason = data["choices"][0]["finish_reason"]
+    
+    # 原先的处理逻辑...
+    formatted_response = {
+        "id": data["id"],
+        "object": "chat.completion",
+        "created": 0,
+        "model": data["model"],
+        "usage": data["usage"],
+        "choices": [{
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": content
+            },
+            "finish_reason": finish_reason
+        }]
+    }
+
+    return formatted_response
 
 
 # 白名单版本
-def format_response(data):
-    LOGGERS['final_response'].info("Now using the format_response_white function.")
+def format_response_white(data):
     # 提取数据...
     content = data["choices"][0]["message"]["content"]
     finish_reason = data["choices"][0]["finish_reason"]
@@ -273,7 +300,7 @@ def format_response(data):
         "id": data["id"],
         "object": "chat.completion",
         "created": 0,
-        "model": "sb",
+        "model": data["model"],
         "usage": data["usage"],
         "choices": [{
             "index": 0,
@@ -288,7 +315,17 @@ def format_response(data):
     return formatted_response
 
 
+# 根据设置选择使用哪个函数
+def process_data(data, filter_mode='white'):
+    if filter_mode == 'white':
+        return format_response_white(data)
+    else:  # 如果filter_mode设置为'black'
+        return format_response_black(data)
 
+
+# 旧的通用函数入口现在默认使用白名单版本
+def format_response(data):
+    return format_response_white(data)
 
 
 # 日志级别处理器
@@ -310,4 +347,4 @@ def log_level_handler():
 # 如果这个脚本是作为主程序运行
 if __name__ == '__main__':
     # 运行Flask应用，设置为非调试模式，让应用在任何公共IP上运行，并在8080端口上监听请求
-    app.run(debug=False, host='0.0.0.0', port=8080)
+    app.run(debug=True, host='0.0.0.0', port=8080)
