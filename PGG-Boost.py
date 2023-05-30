@@ -298,20 +298,20 @@ def format_response_black(data):
 
 def format_response_white(data):
     # 提取数据...
-    parts = data["message"]["content"]["parts"]
+    content = data["message"]["content"]["parts"][0]
     finish_reason = data["message"]["metadata"]["finish_details"]["type"]
     created = int(data["message"]["create_time"])
-    
-    # 解析富文本部分的代码块
-    code_parts = []
-    for part in parts:
-        try:
-            decoded_part = json.JSONDecoder().raw_decode(part)
-            code_parts.append(decoded_part[0])
-        except json.JSONDecodeError:
-            # 如果无法解析为 JSON，将其作为字符串存储
-            code_parts.append(part)
-    
+
+    # 定位富文本信息的起始和结束位置
+    start_marker = '"content": {"content_type": "text", "parts": "'
+    end_marker = '"}, "status": "finished_successfully"'
+    start_index = content.find(start_marker) + len(start_marker)
+    end_index = content.find(end_marker)
+    rich_text = content[start_index:end_index]
+
+    # 替换富文本信息为空字符串
+    filtered_content = content.replace(rich_text, "")
+
     # 创建新的数据结构，包含处理后的内容
     formatted_response = {
         "id": data["message"]["id"],
@@ -327,11 +327,15 @@ def format_response_white(data):
             "index": 0,
             "message": {
                 "role": "assistant",
-                "content": code_parts,
+                "content": filtered_content,
+                "rich_text": rich_text  # 将富文本信息存放在新的键中
             },
             "finish_reason": finish_reason,
         }],
     }
+
+    # 记录存放的富文本数据
+    LOGGERS['received_data'].info('存放的富文本数据: %s', rich_text)
 
     return formatted_response
 
