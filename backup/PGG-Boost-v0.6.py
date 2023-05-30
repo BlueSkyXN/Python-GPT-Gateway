@@ -6,7 +6,6 @@ import json
 import requests
 import logging
 import uuid
-import configparser
 
 # 创建一个用于将日志输出到文件的处理器
 handler = logging.FileHandler('app.log')
@@ -76,14 +75,7 @@ CORS(app)
 # 初始化访问令牌
 ACCESS_TOKENS = AccessToken(["token1", "token2", "token3"])
 
-# 创建 ConfigParser 实例
-config = configparser.ConfigParser()
-
-# 读取 config.ini 文件
-config.read('config.ini')
-
-# 获取 ADMIN_PASSWORD 的值
-admin_password = config.get('DEFAULT', 'ADMIN_PASSWORD', fallback='TotallySecurePassword')
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "TotallySecurePassword")
 
 API_KEYS = {}
 with open("api_keys.txt", "r") as file:
