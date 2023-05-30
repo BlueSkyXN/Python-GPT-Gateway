@@ -9,26 +9,28 @@ import uuid
 import random
 import logging
 
-# 创建一个Handler，用于将日志输出到文件
+# 创建一个用于将日志输出到文件的处理器
 handler = logging.FileHandler('app.log')
 
-# 创建一个Formatter，用于定义日志信息的格式
+# 创建一个定义日志信息格式的格式化程序
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(message)s')
 
-# 设置Handler的Formatter
+# 为处理器设置格式化程序
 handler.setFormatter(formatter)
 
-# 创建Logger对象，并为每一个Logger设置Handler
+# 创建Logger对象，并为每个Logger设置处理器
 LOGGERS = {
     'send_request': logging.getLogger('send_request'),
     'received_data': logging.getLogger('received_data'),
     'final_response': logging.getLogger('final_response'),
 }
 
+# 遍历并设置Logger的处理器和级别
 for logger_name, logger in LOGGERS.items():
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
 
+# 设置调试级别函数
 def set_debug_level(level):
     level = level.lower()
     if level == "debug":
@@ -50,15 +52,14 @@ def set_debug_level(level):
 DEBUG_LEVEL = "info"
 set_debug_level(DEBUG_LEVEL)
 
-
-
+# 访问令牌类
 class AccessToken:
     def __init__(self, tokens):
         self.tokens = queue.Queue()
         for token in tokens:
             self.tokens.put(token)
 
-        # Save the tokens to a file
+        # 保存令牌到文件
         if not os.path.exists('access_tokens.json'):
             with open('access_tokens.json', 'w') as f:
                 json.dump(tokens, f)
@@ -66,6 +67,7 @@ class AccessToken:
             with open('access_tokens.json', 'w') as f:
                 json.dump(tokens, f)
 
+    # 获取令牌方法
     def get_token(self):
         if self.tokens.empty():
             return ""
@@ -74,11 +76,12 @@ class AccessToken:
         self.tokens.put(token)
         return token
 
-# Create a new Flask app
+
+# 创建一个新的Flask应用
 app = Flask(__name__)
 CORS(app)
 
-# Initialize your access tokens
+# 初始化访问令牌
 ACCESS_TOKENS = AccessToken(["token1", "token2", "token3"])
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "TotallySecurePassword")
@@ -93,7 +96,7 @@ with open("api_keys.txt", "r") as file:
         if key != "":
             API_KEYS["Bearer " + key] = True
 
-
+# API请求转换函数
 def convert_api_request(api_request):
     chatgpt_request = {
         'action': 'next',
@@ -124,6 +127,7 @@ def convert_api_request(api_request):
 
 
 
+# 发送请求函数
 def send_request(chatgpt_request, access_token):
     url = os.getenv('API_REVERSE_PROXY', 'https://ai.fakeopen.com/api/conversation')
     headers = {
@@ -135,18 +139,18 @@ def send_request(chatgpt_request, access_token):
     if access_token:
         headers['Authorization'] = 'Bearer ' + access_token
 
-    LOGGERS['send_request'].info('Sending request: %s', json.dumps(chatgpt_request))  # 记录发送的请求内容
-    LOGGERS['send_request'].info('Sent request with headers: %s', headers) 
+    LOGGERS['send_request'].info('正在发送请求: %s', json.dumps(chatgpt_request))  # 记录发送的请求内容
+    LOGGERS['send_request'].info('已发送带有头部的请求: %s', headers) 
 
     try:
         response = requests.post(url, headers=headers, json=chatgpt_request)
         response.raise_for_status()  # 检查响应状态码，如果不是 2xx，则会抛出异常
     except requests.exceptions.RequestException as e:
-        LOGGERS['send_request'].error('Error occurred: %s', str(e)) 
+        LOGGERS['send_request'].error('发生错误: %s', str(e)) 
         return Response('Error: ' + str(e), 500)
 
-    LOGGERS['received_data'].info('Response headers: %s', response.headers)  # 打印响应头部信息
-    LOGGERS['received_data'].info('Full response: %s', response.text)  # 记录完整响应
+    LOGGERS['received_data'].info('响应头部: %s', response.headers)  # 打印响应头部信息
+    LOGGERS['received_data'].info('完整响应: %s', response.text)  # 记录完整响应
 
     return response
 
