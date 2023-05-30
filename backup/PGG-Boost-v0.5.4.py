@@ -323,37 +323,16 @@ def format_response_white(data, rich_text):
             "index": 0,
             "message": {
                 "role": "assistant",
-                "content": ""  # 先假设content为空
+                "content": rich_text  # 使用处理后的富文本数据
             },
             "finish_reason": finish_reason,
         }],
     }
 
-    # 将formatted_response转换为字符串
-    Out0 = json.dumps(formatted_response)
-
-    # 定位'"content": "'的位置
-    content_start_index = Out0.find('"content": "')
-    if content_start_index == -1:
-        return formatted_response  # 如果找不到'"content": "'，则直接返回原始数据
-
-    # 将'"content": "'之前的所有字符移动到Out1
-    Out1 = Out0[:content_start_index + 12]
-
-    # 将'"content": "'之后的所有字符移动到Out2
-    Out2 = Out0[content_start_index + 12:]
-
-    # 将Out1、rich_text和Out2并起来形成Out3
-    Out3 = Out1 + rich_text + Out2
-
-    # 将Out3转换回JSON
-    formatted_response = json.loads(Out3)
-
     # 记录存放的富文本数据
     LOGGERS['received_data'].info('存放的富文本数据: %s', rich_text)
 
     return formatted_response
-
 
 
 # 根据设置选择使用哪个函数
@@ -405,7 +384,6 @@ def process_json_data(data):
 
     # 定位"], "status": "finished_successfully"的位置
     status_start_index = str0.find('"], "status": "finished_successfully"')
-    
     if status_start_index == -1:
         return data, ""  # 如果找不到"], "status": "finished_successfully"，则直接返回原始数据和空字符串
 
