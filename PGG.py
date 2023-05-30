@@ -9,7 +9,47 @@ import uuid
 import random
 import logging
 
-logging.basicConfig(filename='app.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
+# 创建一个Handler，用于将日志输出到文件
+handler = logging.FileHandler('app.log')
+
+# 创建一个Formatter，用于定义日志信息的格式
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(message)s')
+
+# 设置Handler的Formatter
+handler.setFormatter(formatter)
+
+# 创建Logger对象，并为每一个Logger设置Handler
+LOGGERS = {
+    'send_request': logging.getLogger('send_request'),
+    'received_data': logging.getLogger('received_data'),
+    'final_response': logging.getLogger('final_response'),
+}
+
+for logger_name, logger in LOGGERS.items():
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+def set_debug_level(level):
+    level = level.lower()
+    if level == "debug":
+        for logger in LOGGERS.values():
+            logger.setLevel(logging.DEBUG)
+    elif level == "info":
+        for logger in LOGGERS.values():
+            logger.setLevel(logging.INFO)
+    elif level == "warning":
+        for logger in LOGGERS.values():
+            logger.setLevel(logging.WARNING)
+    elif level == "error":
+        for logger in LOGGERS.values():
+            logger.setLevel(logging.ERROR)
+    elif level == "critical":
+        for logger in LOGGERS.values():
+            logger.setLevel(logging.CRITICAL)
+
+DEBUG_LEVEL = "info"
+set_debug_level(DEBUG_LEVEL)
+
 
 
 class AccessToken:
