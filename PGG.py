@@ -7,6 +7,10 @@ from threading import Lock
 import queue
 import uuid
 import random
+import logging
+
+logging.basicConfig(filename='app.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
+
 
 class AccessToken:
     def __init__(self, tokens):
@@ -94,6 +98,7 @@ def send_request(chatgpt_request, access_token):
     try:
         response = requests.post(url, headers=headers, json=chatgpt_request)
         response.raise_for_status()  # 检查响应状态码，如果不是 2xx，则会抛出异常
+        logging.debug('Response headers: %s', response.headers)  # 打印响应头部信息
     except requests.exceptions.RequestException as e:
         return Response('Error: ' + str(e), 500)
 
@@ -169,7 +174,10 @@ def options_handler():
 @app.route('/v1/chat/completions', methods=['POST'])
 def nightmare_handler():
     data = request.get_json()
+    logging.debug('Received data: %s', data)  # 这里添加日志记录
+    
     translated_request = convert_api_request(data)
+
 
     auth_header = request.headers.get('Authorization')
     token = ACCESS_TOKENS.get_token() if ACCESS_TOKENS else None
@@ -181,11 +189,13 @@ def nightmare_handler():
     response = send_request(translated_request, token)
 
     if response.status_code != 200:
-        return response.text, response.status_code
+        return response.get_data(as_text=True), response.status_code
+
+
 
     # 处理返回的数据
     final_message = None
-    for line in response.text.split("\n"):
+    for line in response.content.decode().split("\n"):
         if line.startswith("data:"):
             message = json.loads(line[5:])  # 移除 "data:" 并解析 JSON
             if message["message"]["status"] == "finished_successfully" and message["message"]["author"]["role"] == "assistant":
@@ -195,6 +205,7 @@ def nightmare_handler():
     # 使用新的格式化函数
     formatted_response = format_response(final_message)
     # 返回处理后的数据
+    logging.debug('Final response: %s', formatted_response)
     return json.dumps(formatted_response), 200
 
     # 原始返回代码
@@ -207,6 +218,9 @@ def format_response(data):
     content = data["message"]["content"]["parts"][0]
     model = data["message"]["metadata"]["model_slug"]
     model = model if model.startswith("gpt-4") else "gpt-3.5-turbo"
+    
+    # Check if "finish_reason" is in "message"
+    finish_reason = data["message"].get("finish_reason", "stop") if data["message"].get("finish_reason") is None else data["message"]["finish_reason"]
 
     # Format it to desired structure
     formatted_response = {
@@ -226,12 +240,13 @@ def format_response(data):
                     "role": "assistant",
                     "content": content
                 },
-                "finish_reason": None
+                "finish_reason": finish_reason  # Use the variable
             }
         ]
     }
-    
+
     return formatted_response
+
 
 
 if __name__ == '__main__':
