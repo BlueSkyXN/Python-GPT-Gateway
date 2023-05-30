@@ -85,7 +85,7 @@ with open("api_keys.txt", "r") as file:
             API_KEYS["Bearer " + key] = True
 
 # 创建全局的ThreadPoolExecutor实例
-executor = ThreadPoolExecutor(max_workers=100)
+executor = ThreadPoolExecutor(max_workers=10)
 
 # 发送请求函数
 def send_request(chatgpt_request, access_token):
@@ -298,34 +298,44 @@ def format_response_black(data):
 
 def format_response_white(data):
     # 提取数据...
-    content = data["message"]["content"]["parts"][0]
+    parts = data["message"]["content"]["parts"]
     finish_reason = data["message"]["metadata"]["finish_details"]["type"]
-
-    # 使用 'create_time' 作为 UNIX 时间戳，把它转换成整数
     created = int(data["message"]["create_time"])
-
-    # 创建一个新的数据结构，只包含需要的字段...
+    
+    # 解析富文本部分的代码块
+    code_parts = []
+    for part in parts:
+        try:
+            decoded_part = json.JSONDecoder().raw_decode(part)
+            code_parts.append(decoded_part[0])
+        except json.JSONDecodeError:
+            # 如果无法解析为 JSON，将其作为字符串存储
+            code_parts.append(part)
+    
+    # 创建新的数据结构，包含处理后的内容
     formatted_response = {
         "id": data["message"]["id"],
         "object": "chat.completion",
-        "created": created,  # 使用真实的创建时间
+        "created": created,
         "model": data["message"]["metadata"]["model_slug"],
         "usage": {
-            "prompt_tokens": 0,  # 这些字段都被硬编码为0
-            "completion_tokens": 0,  # 这些字段都被硬编码为0
-            "total_tokens": 0  # 这些字段都被硬编码为0
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0
         },
         "choices": [{
             "index": 0,
             "message": {
                 "role": "assistant",
-                "content": content,
+                "content": code_parts,
             },
             "finish_reason": finish_reason,
         }],
     }
 
     return formatted_response
+
+
 
 
 # 根据设置选择使用哪个函数
