@@ -259,23 +259,23 @@ def nightmare_handler():
 # 黑名单版本
 def format_response_black(data):
     # 提取数据...
-    content = data["choices"][0]["message"]["content"]
-    finish_reason = data["choices"][0]["finish_reason"]
-    
+    message = data["message"]
+    content = message["content"]["parts"][0]
+    status = message["status"]
+    model_slug = message["metadata"]["model_slug"]
+
     # 原先的处理逻辑...
     formatted_response = {
-        "id": data["id"],
+        "id": message["id"],
         "object": "chat.completion",
-        "created": 0,
-        "model": data["model"],
-        "usage": data["usage"],
+        "created": int(message["create_time"]),
+        "model": model_slug,
         "choices": [{
-            "index": 0,
             "message": {
-                "role": "assistant",
+                "role": message["author"]["role"],
                 "content": content
             },
-            "finish_reason": finish_reason
+            "finish_reason": status
         }]
     }
 
@@ -285,27 +285,28 @@ def format_response_black(data):
 # 白名单版本
 def format_response_white(data):
     # 提取数据...
-    content = data["choices"][0]["message"]["content"]
-    finish_reason = data["choices"][0]["finish_reason"]
+    message = data["message"]
+    content = message["content"]["parts"][0]
+    status = message["status"]
+    model_slug = message["metadata"]["model_slug"]
 
     # 创建一个新的数据结构，只包含需要的字段...
     formatted_response = {
-        "id": data["id"],
+        "id": message["id"],
         "object": "chat.completion",
-        "created": 0,
-        "model": data["model"],
-        "usage": data["usage"],
+        "created": int(message["create_time"]),
+        "model": model_slug,
         "choices": [{
-            "index": 0,
             "message": {
-                "role": "assistant",
+                "role": message["author"]["role"],
                 "content": content,
             },
-            "finish_reason": finish_reason,
+            "finish_reason": status,
         }],
     }
 
     return formatted_response
+
 
 
 # 根据设置选择使用哪个函数
