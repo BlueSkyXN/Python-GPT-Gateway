@@ -135,17 +135,21 @@ def send_request(chatgpt_request, access_token):
     if access_token:
         headers['Authorization'] = 'Bearer ' + access_token
 
+    LOGGERS['send_request'].info('Sending request: %s', json.dumps(chatgpt_request))  # 记录发送的请求内容
+    LOGGERS['send_request'].info('Sent request with headers: %s', headers) 
+
     try:
         response = requests.post(url, headers=headers, json=chatgpt_request)
         response.raise_for_status()  # 检查响应状态码，如果不是 2xx，则会抛出异常
-        LOGGERS['send_request'].info('Sent request with headers: %s', headers)  
     except requests.exceptions.RequestException as e:
         LOGGERS['send_request'].error('Error occurred: %s', str(e)) 
         return Response('Error: ' + str(e), 500)
 
     LOGGERS['received_data'].info('Response headers: %s', response.headers)  # 打印响应头部信息
+    LOGGERS['received_data'].info('Full response: %s', response.text)  # 记录完整响应
 
     return response
+
 
 
 @app.before_request
