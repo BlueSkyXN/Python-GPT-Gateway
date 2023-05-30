@@ -195,18 +195,11 @@ def password_handler():
 @app.route('/admin/tokens', methods=['PATCH'])
 def tokens_handler():
     data = request.get_json()
-    if 'tokens' not in data:
-        return 'Tokens 未提供', 400
-
-    tokens = data['tokens']
-    # 检查 tokens 是否为非空列表，并且每个元素都是字符串
-    if not isinstance(tokens, list) or not tokens or not all(isinstance(token, str) for token in tokens):
-        return '无效的 Tokens', 400
-
+    if data is None or len(data) == 0:
+        return 'tokens not provided', 400
     global ACCESS_TOKENS
-    ACCESS_TOKENS = AccessToken(tokens)
-    return 'Tokens 已更新', 200
-
+    ACCESS_TOKENS = AccessToken(data)
+    return 'tokens updated', 200
 
 
 # ping处理器
