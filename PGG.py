@@ -191,26 +191,22 @@ def password_handler():
     os.environ["ADMIN_PASSWORD"] = ADMIN_PASSWORD
     return '密码已更新', 200
 
-# PUID处理器
-@app.route('/admin/puid', methods=['PATCH'])
-def puid_handler():
-    data = request.get_json()
-    if 'puid' not in data:
-        return 'puid未提供', 400
-    global PUID
-    PUID = data['puid']
-    os.environ["PUID"] = PUID
-    return 'puid已更新', 200
-
 # 令牌处理器
 @app.route('/admin/tokens', methods=['PATCH'])
 def tokens_handler():
     data = request.get_json()
-    if data is None or len(data) == 0:
-        return '未提供令牌', 400
+    if 'tokens' not in data:
+        return 'Tokens 未提供', 400
+
+    tokens = data['tokens']
+    # 检查 tokens 是否为非空列表，并且每个元素都是字符串
+    if not isinstance(tokens, list) or not tokens or not all(isinstance(token, str) for token in tokens):
+        return '无效的 Tokens', 400
+
     global ACCESS_TOKENS
-    ACCESS_TOKENS = AccessToken(data)
-    return '令牌已更新', 200
+    ACCESS_TOKENS = tokens
+    return 'Tokens 已更新', 200
+
 
 # ping处理器
 @app.route('/ping', methods=['GET'])
@@ -305,12 +301,17 @@ def format_response(data):
 @app.route('/admin/log_level', methods=['PATCH'])
 def log_level_handler():
     data = request.get_json()
-    if 'level' not in data:
-        return '日志级别未提供', 400
-    set_debug_level(data['level'])
-    return '日志级别已更新', 200
+    if 'log_level' not in data:
+        return 'Log level 未提供', 400
 
+    log_level = data['log_level']
+    # 检查 log_level 是否是有效的日志级别
+    valid_log_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+    if not isinstance(log_level, str) or log_level not in valid_log_levels:
+        return '无效的 Log Level', 400
 
+    logger.setLevel(log_level)
+    return 'Log Level 已更新', 200
 
 # 如果这个脚本是作为主程序运行
 if __name__ == '__main__':
