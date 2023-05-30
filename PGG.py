@@ -286,12 +286,15 @@ def format_response_white(data):
     # 提取数据...
     content = data["message"]["content"]["parts"][0]
     finish_reason = data["message"]["metadata"]["finish_details"]["type"]
+    
+    # 使用 'create_time' 作为 UNIX 时间戳，把它转换成整数
+    created = int(data["message"]["create_time"])
 
     # 创建一个新的数据结构，只包含需要的字段...
     formatted_response = {
         "id": data["message"]["id"],
         "object": "chat.completion",
-        "created": 0,  # 这里你可能需要用真实的创建时间
+        "created": created,  # 使用真实的创建时间
         "model": data["message"]["metadata"]["model_slug"],
         "usage": {
             "prompt_tokens": 0,  # 这些字段都被硬编码为0
@@ -309,7 +312,6 @@ def format_response_white(data):
     }
 
     return formatted_response
-
 
 
 # 根据设置选择使用哪个函数
