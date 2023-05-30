@@ -138,11 +138,15 @@ def send_request(chatgpt_request, access_token):
     try:
         response = requests.post(url, headers=headers, json=chatgpt_request)
         response.raise_for_status()  # 检查响应状态码，如果不是 2xx，则会抛出异常
-        logging.debug('Response headers: %s', response.headers)  # 打印响应头部信息
+        LOGGERS['send_request'].info('Sent request with headers: %s', headers)  
     except requests.exceptions.RequestException as e:
+        LOGGERS['send_request'].error('Error occurred: %s', str(e)) 
         return Response('Error: ' + str(e), 500)
 
+    LOGGERS['received_data'].info('Response headers: %s', response.headers)  # 打印响应头部信息
+
     return response
+
 
 @app.before_request
 def admin_check():
@@ -214,10 +218,9 @@ def options_handler():
 @app.route('/v1/chat/completions', methods=['POST'])
 def nightmare_handler():
     data = request.get_json()
-    logging.debug('Received data: %s', data)  # 这里添加日志记录
+    LOGGERS['received_data'].info('Received data: %s', data)  # 这里添加日志记录
     
     translated_request = convert_api_request(data)
-
 
     auth_header = request.headers.get('Authorization')
     token = ACCESS_TOKENS.get_token() if ACCESS_TOKENS else None
@@ -231,8 +234,6 @@ def nightmare_handler():
     if response.status_code != 200:
         return response.get_data(as_text=True), response.status_code
 
-
-
     # 处理返回的数据
     final_message = None
     for line in response.content.decode().split("\n"):
@@ -245,12 +246,10 @@ def nightmare_handler():
     # 使用新的格式化函数
     formatted_response = format_response(final_message)
     # 返回处理后的数据
-    logging.debug('Final response: %s', formatted_response)
+    LOGGERS['final_response'].info('Final response: %s', formatted_response)
     return json.dumps(formatted_response), 200
-
-    # 原始返回代码
+    #原始返回代码
     # return json.dumps(final_message), 200
-
 
 def format_response(data):
     # Extract necessary information from the response
@@ -286,6 +285,7 @@ def format_response(data):
     }
 
     return formatted_response
+
 
 
 
