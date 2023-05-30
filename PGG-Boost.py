@@ -145,12 +145,18 @@ def process_request(data):
     return formatted_response
 
 
-# 请求处理器
 def request_handler(data):
     # 提交任务给ThreadPoolExecutor执行
     future = executor.submit(process_request, data)
     result = future.result()  # 获取任务结果
-    return result
+
+    # 处理返回的数据
+    processed_data, rich_text = process_json_data(result)
+
+    # 使用新的格式化函数
+    formatted_response = format_response_white(processed_data, rich_text)
+
+    return formatted_response
 
 
 # API请求转换函数
@@ -296,21 +302,11 @@ def format_response_black(data):
     return formatted_response
 
 
-def format_response_white(data):
+def format_response_white(data, rich_text):
     # 提取数据...
     content = data["message"]["content"]["parts"][0]
     finish_reason = data["message"]["metadata"]["finish_details"]["type"]
     created = int(data["message"]["create_time"])
-
-    # 定位富文本信息的起始和结束位置
-    start_marker = '"content": {"content_type": "text", "parts": "'
-    end_marker = '"}, "status": "finished_successfully"'
-    start_index = content.find(start_marker) + len(start_marker)
-    end_index = content.find(end_marker)
-    rich_text = content[start_index:end_index]
-
-    # 替换富文本信息为空字符串
-    filtered_content = content.replace(rich_text, "")
 
     # 创建新的数据结构，包含处理后的内容
     formatted_response = {
@@ -327,8 +323,7 @@ def format_response_white(data):
             "index": 0,
             "message": {
                 "role": "assistant",
-                "content": filtered_content,
-                "rich_text": rich_text  # 将富文本信息存放在新的键中
+                "content": rich_text  # 使用处理后的富文本数据
             },
             "finish_reason": finish_reason,
         }],
@@ -338,8 +333,6 @@ def format_response_white(data):
     LOGGERS['received_data'].info('存放的富文本数据: %s', rich_text)
 
     return formatted_response
-
-
 
 
 # 根据设置选择使用哪个函数
