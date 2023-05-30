@@ -152,6 +152,7 @@ def send_request(chatgpt_request, access_token):
 
 
 
+# 对请求进行管理员检查
 @app.before_request
 def admin_check():
     if request.path.startswith('/admin'):
@@ -161,6 +162,7 @@ def admin_check():
         elif password != ADMIN_PASSWORD:
             return 'Unauthorized: Invalid password', 401
 
+# 对请求进行授权检查
 @app.before_request
 def authorization():
     if len(API_KEYS) != 0:
@@ -174,55 +176,59 @@ def authorization():
 
 
 
+# 管理员密码处理器
 @app.route('/admin/password', methods=['PATCH'])
 def password_handler():
     data = request.get_json()
     if 'password' not in data:
-        return 'password not provided', 400
+        return '密码未提供', 400
     global ADMIN_PASSWORD
     ADMIN_PASSWORD = data['password']
     os.environ["ADMIN_PASSWORD"] = ADMIN_PASSWORD
-    return 'password updated', 200
+    return '密码已更新', 200
 
-
+# PUID处理器
 @app.route('/admin/puid', methods=['PATCH'])
 def puid_handler():
     data = request.get_json()
     if 'puid' not in data:
-        return 'puid not provided', 400
+        return 'puid未提供', 400
     global PUID
     PUID = data['puid']
     os.environ["PUID"] = PUID
-    return 'puid updated', 200
+    return 'puid已更新', 200
 
-
+# 令牌处理器
 @app.route('/admin/tokens', methods=['PATCH'])
 def tokens_handler():
     data = request.get_json()
     if data is None or len(data) == 0:
-        return 'tokens not provided', 400
+        return '未提供令牌', 400
     global ACCESS_TOKENS
     ACCESS_TOKENS = AccessToken(data)
-    return 'tokens updated', 200
+    return '令牌已更新', 200
 
+# ping处理器
 @app.route('/ping', methods=['GET'])
 def ping_handler():
     return 'pong', 200
 
+# 首页处理器
 @app.route('/', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def home_handler():
-    return 'Welcome to PGG<br/>Your current operation is ' + request.method, 200
+    return '欢迎访问PGG<br/>您当前的操作是 ' + request.method, 200
 
-
+# option请求处理器
 @app.route('/v1/chat/completions', methods=['OPTIONS'])
 def options_handler():
     return jsonify({"message": "pong"}), 200
 
 
+# post请求处理器
 @app.route('/v1/chat/completions', methods=['POST'])
 def nightmare_handler():
     data = request.get_json()
-    LOGGERS['received_data'].info('Received data: %s', data)  # 这里添加日志记录
+    LOGGERS['received_data'].info('接收到的数据: %s', data)  # 这里添加日志记录
     
     translated_request = convert_api_request(data)
 
@@ -250,7 +256,7 @@ def nightmare_handler():
     # 使用新的格式化函数
     formatted_response = format_response(final_message)
     # 返回处理后的数据
-    LOGGERS['final_response'].info('Final response: %s', formatted_response)
+    LOGGERS['final_response'].info('最终响应: %s', formatted_response)
     return json.dumps(formatted_response), 200
     #原始返回代码
     # return json.dumps(final_message), 200
