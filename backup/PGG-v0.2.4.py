@@ -293,7 +293,5 @@ def format_response(data):
 
 
 
-# 如果这个脚本是作为主程序运行
 if __name__ == '__main__':
-    # 运行Flask应用，设置为非调试模式，让应用在任何公共IP上运行，并在8080端口上监听请求
-    app.run(debug=False, host='0.0.0.0', port=8080)
+    app.run(debug=True, host='0.0.0.0', port=8080)
