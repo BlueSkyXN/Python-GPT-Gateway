@@ -282,26 +282,29 @@ def format_response_black(data):
     return formatted_response
 
 
-# 白名单版本
 def format_response_white(data):
     # 提取数据...
-    message = data["message"]
-    content = message["content"]["parts"][0]
-    status = message["status"]
-    model_slug = message["metadata"]["model_slug"]
+    content = data["message"]["content"]["parts"][0]
+    finish_reason = data["message"]["metadata"]["finish_details"]["type"]
 
     # 创建一个新的数据结构，只包含需要的字段...
     formatted_response = {
-        "id": message["id"],
+        "id": data["message"]["id"],
         "object": "chat.completion",
-        "created": int(message["create_time"]),
-        "model": model_slug,
+        "created": 0,  # 这里你可能需要用真实的创建时间
+        "model": data["message"]["metadata"]["model_slug"],
+        "usage": {
+            "prompt_tokens": 0,  # 这些字段都被硬编码为0
+            "completion_tokens": 0,  # 这些字段都被硬编码为0
+            "total_tokens": 0  # 这些字段都被硬编码为0
+        },
         "choices": [{
+            "index": 0,
             "message": {
-                "role": message["author"]["role"],
+                "role": "assistant",
                 "content": content,
             },
-            "finish_reason": status,
+            "finish_reason": finish_reason,
         }],
     }
 
