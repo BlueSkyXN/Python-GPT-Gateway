@@ -372,6 +372,42 @@ def log_level_handler():
         logger.setLevel(log_level)
     return 'Log Level 已更新', 200
 
+def process_json_data(data):
+    # 将数据转换为字符串
+    str0 = json.dumps(data)
+
+    # 初始化字符串变量
+    str1 = ""
+    str2 = ""
+    str3 = ""
+
+    # 定位"parts": ["的位置
+    parts_start_index = str0.find('"parts": ["')
+    if parts_start_index == -1:
+        return data, ""  # 如果找不到"parts": ["，则直接返回原始数据和空字符串
+
+    # 将"parts": ["之前的所有字符移动到str1
+    str1 = str0[:parts_start_index + 11]
+
+    # 定位"], "status": "finished_successfully"的位置
+    status_start_index = str0.find('"], "status": "finished_successfully"')
+    if status_start_index == -1:
+        return data, ""  # 如果找不到"], "status": "finished_successfully"，则直接返回原始数据和空字符串
+
+    # 将"], "status": "finished_successfully"之前的所有字符移动到str2
+    str2 = str0[parts_start_index + 11:status_start_index]
+
+    # 将"], "status": "finished_successfully"之后的所有字符移动到str3
+    str3 = str0[status_start_index:]
+
+    # 将str1和str3并起来形成str4
+    str4 = str1 + '"]' + str3
+
+    # 将str4转换回JSON
+    processed_data = json.loads(str4)
+
+    return processed_data, str2
+
 
 # 如果这个脚本是作为主程序运行
 if __name__ == '__main__':
