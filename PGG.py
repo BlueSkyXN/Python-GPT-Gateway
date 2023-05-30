@@ -204,8 +204,9 @@ def tokens_handler():
         return '无效的 Tokens', 400
 
     global ACCESS_TOKENS
-    ACCESS_TOKENS = tokens
+    ACCESS_TOKENS = AccessToken(tokens)
     return 'Tokens 已更新', 200
+
 
 
 # ping处理器
