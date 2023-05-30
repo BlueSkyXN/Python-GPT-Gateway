@@ -262,40 +262,70 @@ def nightmare_handler():
     #原始返回代码
     # return json.dumps(final_message), 200
 
-def format_response(data):
-    # 从响应中提取必要的信息
-    message_id = data["message"]["id"]
-    content = data["message"]["content"]["parts"][0]
-    model = data["message"]["metadata"]["model_slug"]
-    model = model if model.startswith("gpt-4") else "gpt-3.5-turbo"
-    
-    # 检查 "finish_reason" 是否在 "message" 中
-    finish_reason = data["message"].get("finish_reason", "stop") if data["message"].get("finish_reason") is None else data["message"]["finish_reason"]
 
-    # 格式化为所需结构
+# 黑名单版本
+def format_response_black(data):
+    # 提取数据...
+    content = data["choices"][0]["message"]["content"]
+    finish_reason = data["choices"][0]["finish_reason"]
+    
+    # 原先的处理逻辑...
     formatted_response = {
-        "id": message_id,
+        "id": data["id"],
         "object": "chat.completion",
         "created": 0,
-        "model": model,
-        "usage": {
-            "prompt_tokens": 0,
-            "completion_tokens": 0,
-            "total_tokens": 0
-        },
-        "choices": [
-            {
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": content
-                },
-                "finish_reason": finish_reason  # 使用变量
-            }
-        ]
+        "model": data["model"],
+        "usage": data["usage"],
+        "choices": [{
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": content
+            },
+            "finish_reason": finish_reason
+        }]
     }
 
     return formatted_response
+
+
+# 白名单版本
+def format_response_white(data):
+    # 提取数据...
+    content = data["choices"][0]["message"]["content"]
+    finish_reason = data["choices"][0]["finish_reason"]
+
+    # 创建一个新的数据结构，只包含需要的字段...
+    formatted_response = {
+        "id": data["id"],
+        "object": "chat.completion",
+        "created": 0,
+        "model": data["model"],
+        "usage": data["usage"],
+        "choices": [{
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": content,
+            },
+            "finish_reason": finish_reason,
+        }],
+    }
+
+    return formatted_response
+
+
+# 根据设置选择使用哪个函数
+def process_data(data, filter_mode='white'):
+    if filter_mode == 'white':
+        return format_response_white(data)
+    else:  # 如果filter_mode设置为'black'
+        return format_response_black(data)
+
+
+# 旧的通用函数入口现在默认使用白名单版本
+def format_response(data):
+    return format_response_white(data)
 
 
 # 日志级别处理器
