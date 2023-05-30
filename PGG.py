@@ -256,16 +256,16 @@ def nightmare_handler():
     # return json.dumps(final_message), 200
 
 def format_response(data):
-    # Extract necessary information from the response
+    # 从响应中提取必要的信息
     message_id = data["message"]["id"]
     content = data["message"]["content"]["parts"][0]
     model = data["message"]["metadata"]["model_slug"]
     model = model if model.startswith("gpt-4") else "gpt-3.5-turbo"
     
-    # Check if "finish_reason" is in "message"
+    # 检查 "finish_reason" 是否在 "message" 中
     finish_reason = data["message"].get("finish_reason", "stop") if data["message"].get("finish_reason") is None else data["message"]["finish_reason"]
 
-    # Format it to desired structure
+    # 格式化为所需结构
     formatted_response = {
         "id": message_id,
         "object": "chat.completion",
@@ -283,13 +283,22 @@ def format_response(data):
                     "role": "assistant",
                     "content": content
                 },
-                "finish_reason": finish_reason  # Use the variable
+                "finish_reason": finish_reason  # 使用变量
             }
         ]
     }
 
     return formatted_response
 
+
+# 日志级别处理器
+@app.route('/admin/log_level', methods=['PATCH'])
+def log_level_handler():
+    data = request.get_json()
+    if 'level' not in data:
+        return '日志级别未提供', 400
+    set_debug_level(data['level'])
+    return '日志级别已更新', 200
 
 
 
