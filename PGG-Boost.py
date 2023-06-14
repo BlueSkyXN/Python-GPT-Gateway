@@ -7,6 +7,7 @@ import requests
 import logging
 import uuid
 import configparser
+import re
 
 
 # 创建 ConfigParser 实例
@@ -484,7 +485,7 @@ def process_json_data_a(data):
 
 
 
-def process_json_data(data):
+def process_json_data_b(data):
     # 将输入数据转换为 JSON 字符串
     str0 = json.dumps(data)
     LOGGERS['received_data'].info('str0-debug: %s', str0)
@@ -524,6 +525,33 @@ def process_json_data(data):
     LOGGERS['received_data'].info('processed_data: %s', processed_data)
 
     return processed_data, str2  # 返回处理后的 JSON 数据和 "parts" 中的内容
+
+
+def process_json_data(data):
+    # 将输入数据转换为 JSON 字符串
+    str0 = json.dumps(data)
+    LOGGERS['received_data'].info('str0-debug: %s', str0)
+
+    # 使用正则表达式匹配 "parts" 字段和它的内容
+    pattern = r'"parts": \[.*?\],'
+    match = re.search(pattern, str0)
+
+    if match is None:
+        return data, ""  # 如果找不到 "parts" 字段，直接返回原始数据和空字符串
+
+    # 获取 "parts" 字段的内容
+    parts_content = match.group(0)[10:-1]
+
+    # 删除 "parts" 字段
+    str1 = re.sub(pattern, '', str0)
+    LOGGERS['received_data'].info('str1: %s', str1)
+
+    # 转换回 JSON 格式
+    processed_data = json.loads(str1)
+
+    LOGGERS['received_data'].info('processed_data: %s', processed_data)
+
+    return processed_data, parts_content  # 返回处理后的 JSON 数据和 "parts" 中的内容
 
 
 
