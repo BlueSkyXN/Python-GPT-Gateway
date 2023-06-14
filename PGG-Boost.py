@@ -526,14 +526,13 @@ def process_json_data_b(data):
 
     return processed_data, str2  # 返回处理后的 JSON 数据和 "parts" 中的内容
 
-
 def process_json_data(data):
     # 将输入数据转换为 JSON 字符串
     str0 = json.dumps(data)
     LOGGERS['received_data'].info('str0-debug: %s', str0)
 
     # 使用正则表达式匹配 "parts" 字段和它的内容
-    pattern = r'"parts": \[.*?\],'
+    pattern = r'"parts": \[.*?\], "status": "finished_successfully"'
     match = re.search(pattern, str0)
 
     if match is None:
@@ -552,6 +551,7 @@ def process_json_data(data):
     LOGGERS['received_data'].info('processed_data: %s', processed_data)
 
     return processed_data, parts_content  # 返回处理后的 JSON 数据和 "parts" 中的内容
+
 
 
 
