@@ -302,7 +302,7 @@ def format_response_black(data):
     return formatted_response
 
 
-def format_response_white(data, rich_text):
+def format_response_white(data, rich_text="NULL"):
     # 提取数据...
     content = data["message"]["content"]["parts"][0]
     finish_reason = data["message"]["metadata"]["finish_details"]["type"]
@@ -344,6 +344,7 @@ def format_response_white(data, rich_text):
     Out2 = Out0[content_start_index + 12:]
 
     # 将Out1、rich_text和Out2并起来形成Out3
+    # 现在，如果调用函数时没有提供rich_text，那么rich_text会被默认设为"NULL"
     Out3 = Out1 + rich_text + Out2
 
     # 将Out3转换回JSON
