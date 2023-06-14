@@ -98,9 +98,6 @@ class AccessToken:
 # 创建一个新的Flask应用
 app = Flask(__name__)
 
-# 添加处理器到 app.logger
-app.logger.addHandler(handler)
-
 CORS(app)
 
 # 初始化访问令牌
@@ -328,7 +325,7 @@ def format_response_black(data):
 
 
 def format_response_white(data, rich_text):
-    app.logger.info("Data: %s", data)  # 将data信息打印到日志中
+    LOGGERS['received_data'].info('data-DEBUG: %s', data)  # 将data信息打印到日志中
     # 提取数据...
     content = data["message"]["content"]["parts"][0]
     finish_reason = data["message"]["metadata"]["finish_details"]["type"]
