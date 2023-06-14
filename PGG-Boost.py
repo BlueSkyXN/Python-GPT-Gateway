@@ -43,6 +43,7 @@ LOGGERS = {
     'send_request': logging.getLogger('send_request'),
     'received_data': logging.getLogger('received_data'),
     'final_response': logging.getLogger('final_response'),
+    'process_request': logging.getLogger('process_request'),
 }
 
 # 遍历并设置Logger的处理器和级别
@@ -141,16 +142,20 @@ def send_request(chatgpt_request, access_token):
 def process_request(data):
     # 转换API请求
     chatgpt_request = convert_api_request(data)
+    LOGGERS['process_request'].info('转换API请求完成')
 
     # 获取访问令牌
     access_token = ACCESS_TOKENS.get_token()
+    LOGGERS['process_request'].info('获取访问令牌完成')
 
     # 发送请求
     response = send_request(chatgpt_request, access_token)
+    LOGGERS['process_request'].info('发送请求完成')
 
     # 释放访问令牌
     if access_token:
         ACCESS_TOKENS.tokens.append(access_token)
+    LOGGERS['process_request'].info('释放访问令牌完成')
 
     # 处理返回的数据
     final_message = None
@@ -160,9 +165,11 @@ def process_request(data):
             if message["message"]["status"] == "finished_successfully" and message["message"]["author"]["role"] == "assistant":
                 final_message = message
                 break
+    LOGGERS['process_request'].info('处理返回的数据完成')
 
     # 使用新的格式化函数
     formatted_response = format_response(final_message)
+    LOGGERS['process_request'].info('格式化响应完成')
 
     return formatted_response
 
@@ -170,17 +177,16 @@ def process_request(data):
 def request_handler(data):
     # 提交任务给ThreadPoolExecutor执行
     future = executor.submit(process_request, data)
-    LOGGERS['received_data'].info('future-DEBUG: %s', future )  # 将信息打印到日志中
+
     result = future.result()  # 获取任务结果
-    LOGGERS['received_data'].info('result-DEBUG: %s', result)  # 将信息打印到日志中
+
 
     # 处理返回的数据
     processed_data, rich_text = process_json_data(result)
-    LOGGERS['received_data'].info('pd-DEBUG: %s', processed_data, rich_text)  # 将信息打印到日志中
+
 
     # 使用新的格式化函数
     formatted_response = format_response_white(processed_data, rich_text)
-    LOGGERS['received_data'].info('fr-DEBUG: %s', formatted_response)  # 将信息打印到日志中
 
     return formatted_response
 
@@ -294,14 +300,9 @@ def options_handler():
 def nightmare_handler():
     data = request.get_json()
     LOGGERS['received_data'].info('接收到的数据: %s', data)  # 这里添加日志记录
-
     formatted_response = request_handler(data)
-    LOGGERS['received_data'].info('formatted_response: %s', formatted_response) 
-
     # 返回处理后的数据
     LOGGERS['final_response'].info('最终响应: %s', formatted_response)
-
-    LOGGERS['final_response'].info('最终响应: %s', json.dumps(formatted_response))
     return json.dumps(formatted_response), 200
 
 
