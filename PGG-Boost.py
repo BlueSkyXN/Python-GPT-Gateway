@@ -195,14 +195,16 @@ def request_handler(data):
 
     result = future.result()  # 获取任务结果
 
-
+    LOGGERS['received_data'].info('req-debug-result: %s', result)
     # 处理返回的数据
     processed_data, rich_text = process_json_data(result)
-
+    
+    LOGGERS['received_data'].info('req-debug-processed_data: %s', processed_data)
+    LOGGERS['received_data'].info('req-debug-rich: %s', rich_text)
 
     # 使用新的格式化函数
     formatted_response = format_response_white(processed_data, rich_text)
-
+    LOGGERS['received_data'].info('req-debug-formatted_response: %s', formatted_response)
     return formatted_response
 
 
@@ -467,6 +469,12 @@ def process_json_data(data):
 
     # 将str4转换回JSON
     processed_data = json.loads(str4)
+
+    LOGGERS['received_data'].info('str1: %s', str1)
+    LOGGERS['received_data'].info('str2: %s', str2)
+    LOGGERS['received_data'].info('str3: %s', str3)
+    LOGGERS['received_data'].info('str4: %s', str4)
+    LOGGERS['received_data'].info('processed_data: %s', processed_data)
 
     return processed_data, str2
 
