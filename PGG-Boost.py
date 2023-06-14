@@ -199,6 +199,11 @@ def convert_api_request(api_request):
         if role == 'system':
             role = 'critic'
         content = api_message.get('content', '')
+        # 尝试解析 content 为 JSON
+        try:
+            content = json.loads(content)
+        except json.JSONDecodeError:
+            pass  # 如果不能解析为JSON，则使用原始字符串
         chatgpt_request['messages'].append({
             'id': str(uuid.uuid4()),
             'author': {'role': role},
@@ -206,7 +211,6 @@ def convert_api_request(api_request):
         })
 
     return chatgpt_request
-
 
 # 对请求进行管理员检查
 @app.before_request
