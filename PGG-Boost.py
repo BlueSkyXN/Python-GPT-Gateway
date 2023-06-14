@@ -170,13 +170,17 @@ def process_request(data):
 def request_handler(data):
     # 提交任务给ThreadPoolExecutor执行
     future = executor.submit(process_request, data)
+    LOGGERS['received_data'].info('future-DEBUG: %s', future )  # 将信息打印到日志中
     result = future.result()  # 获取任务结果
+    LOGGERS['received_data'].info('result-DEBUG: %s', result)  # 将信息打印到日志中
 
     # 处理返回的数据
     processed_data, rich_text = process_json_data(result)
+    LOGGERS['received_data'].info('pd-DEBUG: %s', processed_data, rich_text)  # 将信息打印到日志中
 
     # 使用新的格式化函数
     formatted_response = format_response_white(processed_data, rich_text)
+    LOGGERS['received_data'].info('fr-DEBUG: %s', formatted_response)  # 将信息打印到日志中
 
     return formatted_response
 
