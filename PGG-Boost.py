@@ -8,8 +8,29 @@ import logging
 import uuid
 import configparser
 
+
+# 创建 ConfigParser 实例
+config = configparser.ConfigParser()
+
+# 读取 config.ini 文件
+config.read('config.ini')
+
+
+# 获取配置项的值
+admin_password = config.get('DEFAULT', 'ADMIN_PASSWORD', fallback='TotallySecurePassword')
+log_level = config.get('DEFAULT', 'LOG_LEVEL', fallback='INFO')
+log_file = config.get('DEFAULT', 'LOG_FILE', fallback='app.log')
+log_enabled = config.getboolean('DEFAULT', 'LOG_ENABLED', fallback=True)
+
+API_KEYS = {}
+with open("api_keys.txt", "r") as file:
+    for line in file:
+        key = line.strip()
+        if key != "":
+            API_KEYS["Bearer " + key] = True
+
 # 创建一个用于将日志输出到文件的处理器
-handler = logging.FileHandler('app.log')
+handler = logging.FileHandler(log_file)
 
 # 创建一个定义日志信息格式的格式化程序
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(message)s')
@@ -17,7 +38,7 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(message)s')
 # 为处理器设置格式化程序
 handler.setFormatter(formatter)
 
-# 创建Logger对象，并为每个Logger设置处理器
+# 创建Logger对象，并为每个Logger设置处理器和级别
 LOGGERS = {
     'send_request': logging.getLogger('send_request'),
     'received_data': logging.getLogger('received_data'),
@@ -27,7 +48,12 @@ LOGGERS = {
 # 遍历并设置Logger的处理器和级别
 for logger_name, logger in LOGGERS.items():
     logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(log_level)
+
+# 根据日志开关启用或禁用日志记录
+if not log_enabled:
+    for logger in LOGGERS.values():
+        logger.disabled = True
 
 # 设置调试级别函数
 def set_debug_level(level):
@@ -76,21 +102,6 @@ CORS(app)
 # 初始化访问令牌
 ACCESS_TOKENS = AccessToken(["token1", "token2", "token3"])
 
-# 创建 ConfigParser 实例
-config = configparser.ConfigParser()
-
-# 读取 config.ini 文件
-config.read('config.ini')
-
-# 获取 ADMIN_PASSWORD 的值
-admin_password = config.get('DEFAULT', 'ADMIN_PASSWORD', fallback='TotallySecurePassword')
-
-API_KEYS = {}
-with open("api_keys.txt", "r") as file:
-    for line in file:
-        key = line.strip()
-        if key != "":
-            API_KEYS["Bearer " + key] = True
 
 # 创建全局的ThreadPoolExecutor实例
 executor = ThreadPoolExecutor(max_workers=10)
