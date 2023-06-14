@@ -345,7 +345,8 @@ def format_response_black(data):
     return formatted_response
 
 
-def format_response_white(data, rich_text):
+#def format_response_white(data, rich_text):
+def format_response_white(data):
     LOGGERS['process_request'].info('UP!!!!')
     LOGGERS['received_data'].info('data-DEBUG: %s', data)  # 将data信息打印到日志中
     # 提取数据...
