@@ -166,6 +166,10 @@ def process_request(data):
                 final_message = message
                 break
     LOGGERS['process_request'].info('处理返回的数据完成')
+    
+    if final_message is None:
+        LOGGERS['process_request'].error('未找到有效的返回信息')
+        return None    
 
     # 使用新的格式化函数
     formatted_response = format_response(final_message)
