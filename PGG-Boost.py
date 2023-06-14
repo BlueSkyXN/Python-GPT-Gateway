@@ -177,14 +177,16 @@ def process_request(data):
 
     # 使用新的格式化函数
 
+    
     LOGGERS['process_request'].info('About to call format_response_white')
-    formatted_response = format_response_white(final_message)
+    #formatted_response = format_response(final_message)
     LOGGERS['process_request'].info('Finished calling format_response_white')
 
 
     LOGGERS['process_request'].info('格式化响应完成')
 
-    return formatted_response
+    #return formatted_response
+    return final_message
 
 
 def request_handler(data):
@@ -345,8 +347,7 @@ def format_response_black(data):
     return formatted_response
 
 
-#def format_response_white(data, rich_text):
-def format_response_white(data):
+def format_response_white(data, rich_text):
     LOGGERS['process_request'].info('UP!!!!')
     LOGGERS['received_data'].info('data-DEBUG: %s', data)  # 将data信息打印到日志中
     # 提取数据...
