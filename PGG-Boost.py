@@ -13,11 +13,11 @@ import configparser
 config = configparser.ConfigParser()
 
 # 读取 config.ini 文件
-config.read('config.ini')
+config.read('config.ini', encoding='utf-8')
 
 
 # 获取配置项的值
-admin_password = config.get('DEFAULT', 'ADMIN_PASSWORD', fallback='TotallySecurePassword')
+ADMIN_PASSWORD = config.get('DEFAULT', 'ADMIN_PASSWORD', fallback='TotallySecurePassword')
 log_level = config.get('DEFAULT', 'LOG_LEVEL', fallback='INFO')
 log_file = config.get('DEFAULT', 'LOG_FILE', fallback='app.log')
 log_enabled = config.getboolean('DEFAULT', 'LOG_ENABLED', fallback=True)
@@ -108,10 +108,12 @@ executor = ThreadPoolExecutor(max_workers=10)
 
 # 发送请求函数
 def send_request(chatgpt_request, access_token):
-    url = os.getenv('API_REVERSE_PROXY', 'https://ai.fakeopen.com/api/conversation')
+    url = config.get('DEFAULT', 'API_URL', fallback='https://ai.fakeopen.com/api/conversation')
+    user_agent = config.get('DEFAULT', 'USER_AGENT', fallback='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36')
+
     headers = {
         'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+        'User-Agent': user_agent,
         'Accept': '*/*'
     }
 
@@ -199,11 +201,7 @@ def convert_api_request(api_request):
         if role == 'system':
             role = 'critic'
         content = api_message.get('content', '')
-        # 尝试解析 content 为 JSON
-        try:
-            content = json.loads(content)
-        except json.JSONDecodeError:
-            pass  # 如果不能解析为JSON，则使用原始字符串
+
         chatgpt_request['messages'].append({
             'id': str(uuid.uuid4()),
             'author': {'role': role},
