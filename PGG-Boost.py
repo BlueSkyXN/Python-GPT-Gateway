@@ -296,9 +296,12 @@ def nightmare_handler():
     LOGGERS['received_data'].info('接收到的数据: %s', data)  # 这里添加日志记录
 
     formatted_response = request_handler(data)
+    LOGGERS['received_data'].info('formatted_response: %s', formatted_response) 
 
     # 返回处理后的数据
     LOGGERS['final_response'].info('最终响应: %s', formatted_response)
+
+    LOGGERS['final_response'].info('最终响应: %s', json.dumps(formatted_response))
     return json.dumps(formatted_response), 200
 
 
