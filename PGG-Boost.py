@@ -506,7 +506,7 @@ def process_json_data(data):
         return data, ""  # 如果找不到"], "status": "finished_successfully"，则直接返回原始数据和空字符串
 
     # 截取三段字符串
-    str1 = str0[:start_pos - 1]  # "parts": ["之前的所有字符
+    str1 = str0[:start_pos]  # "parts": ["之前的所有字符
     str2 = str0[start_pos:status_start_index]  # "parts": [" 和 "], "status": "finished_successfully" 之间的字符串
     str3 = str0[status_start_index:]  # "], "status": "finished_successfully"之后的所有字符
 
@@ -524,6 +524,7 @@ def process_json_data(data):
     LOGGERS['received_data'].info('processed_data: %s', processed_data)
 
     return processed_data, str2  # 返回处理后的 JSON 数据和 "parts" 中的内容
+
 
 
 
