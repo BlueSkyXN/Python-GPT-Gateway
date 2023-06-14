@@ -435,9 +435,11 @@ def log_level_handler():
         logger.setLevel(log_level)
     return 'Log Level 已更新', 200
 
-def process_json_data(data):
+def process_json_data_a(data):
     # 将数据转换为字符串
+    LOGGERS['received_data'].info('str-debug-data: %s', data)
     str0 = json.dumps(data)
+    LOGGERS['received_data'].info('str0-debug: %s', str0)
 
     # 初始化字符串变量
     str1 = ""
@@ -451,25 +453,27 @@ def process_json_data(data):
 
     # 将"parts": ["之前的所有字符移动到str1
     str1 = str0[:parts_start_index + 11]
-
+    LOGGERS['received_data'].info('str1: %s', str1)
     # 定位"], "status": "finished_successfully"的位置
     status_start_index = str0.find('"], "status": "finished_successfully"')
-    
+    LOGGERS['received_data'].info('status_start_index: %s', status_start_index)
     if status_start_index == -1:
         return data, ""  # 如果找不到"], "status": "finished_successfully"，则直接返回原始数据和空字符串
 
     # 将"], "status": "finished_successfully"之前的所有字符移动到str2
     str2 = str0[parts_start_index + 11:status_start_index]
+    LOGGERS['received_data'].info('str2: %s', str2)
 
     # 将"], "status": "finished_successfully"之后的所有字符移动到str3
     str3 = str0[status_start_index:]
-
+    LOGGERS['received_data'].info('str3: %s', str3)
     # 将str1和str3并起来形成str4
     str4 = str1 + '"]' + str3
-
+    LOGGERS['received_data'].info('str4: %s', str4)
+    
     # 将str4转换回JSON
     processed_data = json.loads(str4)
-
+    LOGGERS['received_data'].info('str0: %s', str0)
     LOGGERS['received_data'].info('str1: %s', str1)
     LOGGERS['received_data'].info('str2: %s', str2)
     LOGGERS['received_data'].info('str3: %s', str3)
@@ -477,6 +481,50 @@ def process_json_data(data):
     LOGGERS['received_data'].info('processed_data: %s', processed_data)
 
     return processed_data, str2
+
+
+
+def process_json_data(data):
+    # 将输入数据转换为 JSON 字符串
+    str0 = json.dumps(data)
+    LOGGERS['received_data'].info('str0-debug: %s', str0)
+
+    start_marker = '"parts": ["'
+    end_marker = '"], "status": "finished_successfully"'
+
+    # 找到 "parts": [" 的位置
+    parts_start_index = str0.find(start_marker)
+    if parts_start_index == -1:
+        return data, ""  # 如果找不到"parts": ["，则直接返回原始数据和空字符串
+
+    # "parts": ["之后的起始位置
+    start_pos = parts_start_index + len(start_marker)
+
+    # 从 "parts": [" 后找到 "], "status": "finished_successfully" 的位置
+    status_start_index = str0.find(end_marker, start_pos)
+    if status_start_index == -1:
+        return data, ""  # 如果找不到"], "status": "finished_successfully"，则直接返回原始数据和空字符串
+
+    # 截取三段字符串
+    str1 = str0[:start_pos - 1]  # "parts": ["之前的所有字符
+    str2 = str0[start_pos:status_start_index]  # "parts": [" 和 "], "status": "finished_successfully" 之间的字符串
+    str3 = str0[status_start_index:]  # "], "status": "finished_successfully"之后的所有字符
+
+    # 合并第一段和第三段字符串
+    str4 = str1 + str3
+    LOGGERS['received_data'].info('str4: %s', str4)
+
+    # 转换回 JSON 格式
+    processed_data = json.loads(str4)
+
+    # 输出日志
+    LOGGERS['received_data'].info('str1: %s', str1)
+    LOGGERS['received_data'].info('str2: %s', str2)
+    LOGGERS['received_data'].info('str3: %s', str3)
+    LOGGERS['received_data'].info('processed_data: %s', processed_data)
+
+    return processed_data, str2  # 返回处理后的 JSON 数据和 "parts" 中的内容
+
 
 
 # 如果这个脚本是作为主程序运行
